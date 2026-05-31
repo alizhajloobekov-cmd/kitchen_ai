@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Вкусные Рецепты</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --fire: #ff6b35; --ember: #ff9f1c; --cream: #fff8f0;
+      --dark: #1a0f07; --text: #3d2b1f; --shadow: rgba(255,107,53,0.15);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { background:var(--cream); color:var(--text); font-family:'Nunito',sans-serif; overflow-x:hidden; }
+
+    /* PAGE SYSTEM */
+    .page { display:none; min-height:100vh; }
+    .page.active { display:block; }
+
+    /* LOADER */
+    #loader {
+      position:fixed; inset:0; z-index:9999; background:var(--dark);
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      transition:opacity .6s, visibility .6s;
+    }
+    #loader.hidden { opacity:0; visibility:hidden; }
+    .loader-emoji { font-size:80px; animation:spin 1.2s ease-in-out infinite alternate; }
+    .loader-text { color:var(--ember); font-family:'Playfair Display',serif; font-size:22px; margin-top:20px; letter-spacing:3px; opacity:0; animation:fadeUp .8s .4s forwards; }
+    @keyframes spin { from{transform:rotate(-15deg) scale(.9)} to{transform:rotate(15deg) scale(1.1)} }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:none} }
+
+    /* HEADER */
+    header {
+      position:sticky; top:0; z-index:100;
+      background:rgba(26,15,7,.93); backdrop-filter:blur(14px);
+      padding:16px 40px; display:flex; align-items:center; justify-content:space-between;
+      border-bottom:1px solid rgba(255,159,28,.2);
+    }
+    .logo { font-family:'Playfair Display',serif; font-size:24px; font-weight:900; color:var(--ember); cursor:pointer; display:flex; align-items:center; gap:8px; }
+    .logo span { color:#fff; }
+    nav { display:flex; gap:28px; align-items:center; }
+    nav a { color:rgba(255,255,255,.7); text-decoration:none; font-size:13px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; transition:color .3s; cursor:pointer; }
+    nav a:hover, nav a.active-nav { color:var(--ember); }
+    .nav-btn {
+      background:linear-gradient(135deg,var(--fire),var(--ember));
+      color:#fff !important; padding:9px 20px; border-radius:20px;
+      font-size:13px !important; font-weight:700 !important; letter-spacing:.5px !important;
+      text-transform:none !important; transition:transform .3s, box-shadow .3s !important;
+      box-shadow:0 4px 18px rgba(255,107,53,.35);
+    }
+    .nav-btn:hover { transform:translateY(-2px) !important; box-shadow:0 8px 28px rgba(255,107,53,.5) !important; }
+
+    /* ══ HOME PAGE ══ */
+    .hero {
+      position:relative; height:100vh; min-height:600px;
+      display:flex; align-items:center; justify-content:center; overflow:hidden;
+    }
+    .hero-bg {
+      position:absolute; inset:0;
+      background:url('https://images.unsplash.com/photo-1490645935967-10de6ba17061?q=80&w=1600&auto=format&fit=crop') center/cover;
+      transform:scale(1.1); animation:heroZoom 8s ease forwards;
+    }
+    @keyframes heroZoom { to{transform:scale(1)} }
+    .hero-overlay { position:absolute; inset:0; background:linear-gradient(160deg,rgba(26,15,7,.72),rgba(255,107,53,.22)); }
+    .particles { position:absolute; inset:0; pointer-events:none; }
+    .particle { position:absolute; width:6px; height:6px; border-radius:50%; background:var(--ember); opacity:0; animation:pfloat var(--dur,6s) var(--del,0s) infinite ease-in-out; }
+    @keyframes pfloat { 0%{opacity:0;transform:translateY(100vh) scale(0)} 10%{opacity:.6} 90%{opacity:.3} 100%{opacity:0;transform:translateY(-100px) scale(1)} }
+    .hero-content { position:relative; text-align:center; color:#fff; opacity:0; animation:fadeUp 1s 1s forwards; }
+    .hero-tag { display:inline-block; background:var(--ember); color:var(--dark); font-size:11px; font-weight:700; letter-spacing:3px; text-transform:uppercase; padding:6px 18px; border-radius:20px; margin-bottom:20px; animation:tagPop 1s 1.3s both; }
+    @keyframes tagPop { from{transform:scale(.7);opacity:0} to{transform:scale(1);opacity:1} }
+    .hero h2 { font-family:'Playfair Display',serif; font-size:clamp(40px,7vw,88px); line-height:1.08; font-weight:900; text-shadow:0 4px 30px rgba(0,0,0,.4); animation:fadeUp 1s 1.5s both; }
+    .hero h2 em { color:var(--ember); font-style:italic; }
+    .hero-sub { font-size:18px; font-weight:300; opacity:.85; margin-top:16px; animation:fadeUp 1s 1.8s both; }
+    .hero-cta { margin-top:36px; display:flex; gap:16px; justify-content:center; flex-wrap:wrap; animation:fadeUp 1s 2.1s both; }
+    .cta-btn {
+      display:inline-block; padding:16px 38px; border-radius:50px;
+      font-weight:700; font-size:15px; text-decoration:none; transition:transform .3s, box-shadow .3s; cursor:pointer; border:none; font-family:'Nunito',sans-serif;
+    }
+    .cta-primary { background:linear-gradient(135deg,var(--fire),var(--ember)); color:#fff; box-shadow:0 8px 30px rgba(255,107,53,.45); }
+    .cta-primary:hover { transform:translateY(-3px); box-shadow:0 14px 40px rgba(255,107,53,.55); }
+    .cta-secondary { background:rgba(255,255,255,.12); color:#fff; border:2px solid rgba(255,255,255,.3); backdrop-filter:blur(8px); }
+    .cta-secondary:hover { background:rgba(255,255,255,.22); transform:translateY(-3px); }
+
+    .container { width:90%; max-width:1200px; margin:90px auto; }
+    .section-header { text-align:center; margin-bottom:60px; opacity:0; transform:translateY(40px); transition:opacity .7s,transform .7s; }
+    .section-header.visible { opacity:1; transform:none; }
+    .section-label { display:inline-block; font-size:11px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:var(--fire); margin-bottom:12px; }
+    .section-title { font-family:'Playfair Display',serif; font-size:clamp(28px,4vw,48px); font-weight:900; color:var(--dark); }
+    .section-title em { color:var(--fire); font-style:italic; }
+    .title-line { display:block; width:60px; height:3px; background:linear-gradient(90deg,var(--fire),var(--ember)); margin:16px auto 0; border-radius:2px; }
+
+    /* HOME CARDS */
+    .recipes-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:32px; }
+    .card { background:#fff; border-radius:24px; overflow:hidden; box-shadow:0 8px 30px var(--shadow); cursor:pointer; opacity:0; transform:translateY(50px); transition:opacity .6s,transform .6s,box-shadow .4s; }
+    .card.visible { opacity:1; transform:none; }
+    .card:hover { transform:translateY(-12px) scale(1.02); box-shadow:0 24px 60px rgba(255,107,53,.25); }
+    .card-img-wrap { position:relative; overflow:hidden; height:230px; }
+    .card-img-wrap img { width:100%; height:100%; object-fit:cover; transition:transform .6s; }
+    .card:hover .card-img-wrap img { transform:scale(1.08); }
+    .card-badge { position:absolute; top:16px; left:16px; background:rgba(26,15,7,.75); color:var(--ember); font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:5px 12px; border-radius:20px; backdrop-filter:blur(6px); }
+    .card-fav { position:absolute; top:14px; right:16px; background:rgba(255,255,255,.9); border:none; cursor:pointer; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:17px; transition:transform .3s; }
+    .card-fav:hover { transform:scale(1.3); }
+    .card-content { padding:24px; }
+    .card-content h3 { font-family:'Playfair Display',serif; font-size:22px; font-weight:700; color:var(--dark); margin-bottom:8px; }
+    .card-content p { font-size:14px; line-height:1.7; color:#6b5044; margin-bottom:18px; }
+    .card-meta { display:flex; gap:16px; font-size:12px; font-weight:600; color:#a07060; margin-bottom:20px; }
+    .btn-recipe { display:inline-flex; align-items:center; gap:8px; background:linear-gradient(135deg,var(--fire),var(--ember)); color:#fff; border:none; cursor:pointer; padding:12px 24px; border-radius:12px; font-family:'Nunito',sans-serif; font-size:14px; font-weight:700; transition:transform .3s,box-shadow .3s; box-shadow:0 4px 18px rgba(255,107,53,.35); }
+    .btn-recipe:hover { transform:translateY(-2px); box-shadow:0 8px 28px rgba(255,107,53,.5); }
+    .btn-recipe svg { transition:transform .3s; }
+    .btn-recipe:hover svg { transform:translateX(4px); }
+
+    /* ABOUT */
+    .about-box { background:var(--dark); border-radius:28px; padding:70px 60px; display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:center; overflow:hidden; position:relative; opacity:0; transform:translateY(40px); transition:opacity .8s,transform .8s; }
+    .about-box.visible { opacity:1; transform:none; }
+    .about-box::before { content:''; position:absolute; top:-80px; right:-80px; width:300px; height:300px; border-radius:50%; background:radial-gradient(circle,rgba(255,159,28,.2),transparent 70%); }
+    .about-text .section-label { color:var(--ember); }
+    .about-text .section-title { color:#fff; }
+    .about-text p { color:rgba(255,255,255,.7); line-height:1.9; margin-top:20px; font-size:15px; }
+    .about-stats { display:grid; grid-template-columns:1fr 1fr; gap:20px; position:relative; }
+    .stat-card { background:rgba(255,255,255,.06); border:1px solid rgba(255,159,28,.2); border-radius:18px; padding:28px; text-align:center; transition:background .3s; }
+    .stat-card:hover { background:rgba(255,159,28,.12); }
+    .stat-num { font-family:'Playfair Display',serif; font-size:42px; font-weight:900; color:var(--ember); }
+    .stat-label { color:rgba(255,255,255,.6); font-size:13px; font-weight:600; margin-top:4px; }
+
+    footer { background:var(--dark); color:rgba(255,255,255,.6); text-align:center; padding:40px 20px; font-size:14px; line-height:2; }
+    footer strong { color:var(--ember); }
+
+    /* ══ LIBRARY PAGE ══ */
+    #page-library { background:var(--cream); }
+    .library-hero {
+      background:var(--dark); padding:80px 40px 60px;
+      text-align:center; position:relative; overflow:hidden;
+    }
+    .library-hero::before { content:''; position:absolute; inset:0; background:url('https://images.unsplash.com/photo-1606787366850-de6330128bfc?q=80&w=1400&auto=format&fit=crop') center/cover; opacity:.15; }
+    .library-hero-content { position:relative; }
+    .library-hero h1 { font-family:'Playfair Display',serif; font-size:clamp(36px,5vw,64px); font-weight:900; color:#fff; }
+    .library-hero h1 em { color:var(--ember); font-style:italic; }
+    .library-hero p { color:rgba(255,255,255,.65); font-size:16px; margin-top:12px; }
+
+    /* SEARCH BAR */
+    .search-wrap { max-width:600px; margin:40px auto 0; position:relative; }
+    .search-input {
+      width:100%; padding:18px 56px 18px 24px; border-radius:50px;
+      border:2px solid rgba(255,159,28,.3); background:rgba(255,255,255,.07);
+      color:#fff; font-family:'Nunito',sans-serif; font-size:16px; font-weight:600;
+      backdrop-filter:blur(10px); outline:none; transition:border .3s,background .3s;
+    }
+    .search-input::placeholder { color:rgba(255,255,255,.4); }
+    .search-input:focus { border-color:var(--ember); background:rgba(255,255,255,.12); }
+    .search-icon { position:absolute; right:20px; top:50%; transform:translateY(-50%); font-size:20px; pointer-events:none; }
+
+    /* FILTERS */
+    .filters-bar { width:90%; max-width:1200px; margin:40px auto 0; display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+    .filter-label { font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:#a07060; margin-right:4px; }
+    .filter-btn {
+      padding:9px 20px; border-radius:20px; border:2px solid #e8d5ca;
+      background:#fff; color:var(--text); font-family:'Nunito',sans-serif; font-size:13px; font-weight:700;
+      cursor:pointer; transition:all .25s; white-space:nowrap;
+    }
+    .filter-btn:hover { border-color:var(--fire); color:var(--fire); }
+    .filter-btn.active { background:linear-gradient(135deg,var(--fire),var(--ember)); color:#fff; border-color:transparent; box-shadow:0 4px 16px rgba(255,107,53,.35); }
+
+    /* SORT */
+    .sort-select {
+      margin-left:auto; padding:9px 16px; border-radius:20px; border:2px solid #e8d5ca;
+      background:#fff; font-family:'Nunito',sans-serif; font-size:13px; font-weight:700; color:var(--text);
+      cursor:pointer; outline:none; transition:border .25s;
+    }
+    .sort-select:focus { border-color:var(--fire); }
+
+    /* RESULTS COUNT */
+    .results-count { width:90%; max-width:1200px; margin:24px auto 0; font-size:13px; color:#a07060; font-weight:600; }
+
+    /* LIBRARY GRID */
+    .library-grid { width:90%; max-width:1200px; margin:24px auto 80px; display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:28px; }
+    .lib-card { background:#fff; border-radius:20px; overflow:hidden; box-shadow:0 6px 24px var(--shadow); cursor:pointer; transition:transform .4s cubic-bezier(.175,.885,.32,1.275),box-shadow .4s; animation:cardIn .5s both; }
+    @keyframes cardIn { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:none} }
+    .lib-card:hover { transform:translateY(-10px) scale(1.02); box-shadow:0 20px 50px rgba(255,107,53,.22); }
+    .lib-card-img { position:relative; height:190px; overflow:hidden; }
+    .lib-card-img img { width:100%; height:100%; object-fit:cover; transition:transform .6s; }
+    .lib-card:hover .lib-card-img img { transform:scale(1.1); }
+    .lib-card-cat { position:absolute; bottom:12px; left:12px; background:linear-gradient(135deg,var(--fire),var(--ember)); color:#fff; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; padding:4px 12px; border-radius:20px; }
+    .lib-card-diff { position:absolute; top:12px; right:12px; background:rgba(26,15,7,.7); color:var(--ember); font-size:10px; font-weight:700; padding:4px 10px; border-radius:20px; backdrop-filter:blur(6px); }
+    .lib-card-body { padding:18px 20px; }
+    .lib-card-body h3 { font-family:'Playfair Display',serif; font-size:18px; font-weight:700; color:var(--dark); margin-bottom:6px; }
+    .lib-card-body p { font-size:13px; line-height:1.6; color:#6b5044; margin-bottom:14px; }
+    .lib-card-meta { display:flex; gap:14px; font-size:11px; font-weight:700; color:#a07060; margin-bottom:14px; }
+    .lib-open-btn { width:100%; padding:11px; border-radius:10px; border:none; background:linear-gradient(135deg,var(--fire),var(--ember)); color:#fff; font-family:'Nunito',sans-serif; font-size:13px; font-weight:700; cursor:pointer; transition:transform .3s,box-shadow .3s; box-shadow:0 4px 14px rgba(255,107,53,.3); }
+    .lib-open-btn:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(255,107,53,.45); }
+
+    /* NO RESULTS */
+    .no-results { grid-column:1/-1; text-align:center; padding:80px 20px; color:#a07060; }
+    .no-results .nr-emoji { font-size:64px; display:block; margin-bottom:16px; }
+    .no-results h3 { font-family:'Playfair Display',serif; font-size:24px; color:var(--dark); margin-bottom:8px; }
+
+    /* MODAL */
+    #modal-overlay { position:fixed; inset:0; z-index:1000; background:rgba(26,15,7,.75); backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; padding:20px; opacity:0; visibility:hidden; transition:opacity .4s,visibility .4s; }
+    #modal-overlay.open { opacity:1; visibility:visible; }
+    .modal { background:#fff; border-radius:28px; max-width:620px; width:100%; max-height:90vh; overflow-y:auto; padding:44px; transform:scale(.85) translateY(30px); transition:transform .4s cubic-bezier(.175,.885,.32,1.275); position:relative; }
+    #modal-overlay.open .modal { transform:scale(1) translateY(0); }
+    .modal-close { position:absolute; top:18px; right:22px; background:#f0e8e2; border:none; cursor:pointer; width:36px; height:36px; border-radius:50%; font-size:18px; display:flex; align-items:center; justify-content:center; transition:background .2s,transform .3s; }
+    .modal-close:hover { background:#ffd9cc; transform:rotate(90deg); }
+    .modal-emoji { font-size:52px; display:block; margin-bottom:8px; }
+    .modal h2 { font-family:'Playfair Display',serif; font-size:30px; font-weight:900; color:var(--dark); margin-bottom:6px; }
+    .modal-sub { color:#a07060; font-size:14px; margin-bottom:24px; }
+    .modal-meta-row { display:flex; gap:14px; flex-wrap:wrap; margin-bottom:24px; }
+    .modal-meta-item { background:#fff4ee; border-radius:12px; padding:9px 15px; font-size:13px; font-weight:600; color:var(--text); display:flex; align-items:center; gap:7px; }
+    .modal-section { margin-bottom:24px; }
+    .modal-section h4 { font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--fire); margin-bottom:12px; }
+    .ingredients-list { list-style:none; display:flex; flex-direction:column; gap:9px; }
+    .ingredients-list li { display:flex; align-items:center; gap:12px; font-size:14px; padding:9px 14px; background:#fff4ee; border-radius:10px; }
+    .ingredients-list li .dot { width:8px; height:8px; border-radius:50%; background:linear-gradient(135deg,var(--fire),var(--ember)); flex-shrink:0; }
+    .steps-list { list-style:none; display:flex; flex-direction:column; gap:12px; }
+    .steps-list li { display:flex; gap:14px; align-items:flex-start; font-size:14px; line-height:1.7; color:var(--text); }
+    .step-num { width:30px; height:30px; border-radius:50%; flex-shrink:0; background:linear-gradient(135deg,var(--fire),var(--ember)); color:#fff; font-weight:700; font-size:13px; display:flex; align-items:center; justify-content:center; }
+
+    /* SCROLL TOP */
+    #scroll-top { position:fixed; bottom:30px; right:30px; z-index:200; width:46px; height:46px; border-radius:50%; background:linear-gradient(135deg,var(--fire),var(--ember)); border:none; cursor:pointer; color:#fff; font-size:20px; box-shadow:0 6px 20px rgba(255,107,53,.4); opacity:0; transform:translateY(20px); transition:opacity .4s,transform .4s; }
+    #scroll-top.visible { opacity:1; transform:none; }
+
+    @media(max-width:768px) {
+      header { padding:14px 18px; }
+      .logo { font-size:20px; }
+      nav { gap:14px; }
+      .about-box { grid-template-columns:1fr; padding:36px 24px; gap:36px; }
+      .modal { padding:28px 20px; }
+      .hero h2 { font-size:38px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-emoji">🍲</div>
+  <div class="loader-text">Готовим что-то вкусное…</div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo" onclick="showPage('home')">🍲 <span>Вкусные</span> Рецепты</div>
+  <nav>
+    <a onclick="showPage('home')" id="nav-home" class="active-nav">Главная</a>
+    <a onclick="showPage('library')" id="nav-library">Рецепты</a>
+    <a href="#about" onclick="showPage('home')">О сайте</a>
+    <a onclick="showPage('library')" class="nav-btn">Все рецепты →</a>
+  </nav>
+</header>
+
+<!-- ══ HOME PAGE ══ -->
+<div class="page active" id="page-home">
+
+  <section class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-overlay"></div>
+    <div class="particles" id="particles"></div>
+    <div class="hero-content">
+      <div class="hero-tag">✦ Лучшие рецепты 2026 ✦</div>
+      <h2>Готовьте <em>вкусно</em><br>вместе с нами!</h2>
+      <p class="hero-sub">Простые рецепты — невероятный результат</p>
+      <div class="hero-cta">
+        <button class="cta-btn cta-primary" onclick="showPage('library')">Смотреть все рецепты</button>
+        <a href="#home-recipes" class="cta-btn cta-secondary">Популярное ↓</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">✦ Выбор редакции ✦</div>
+      <h2 class="section-title">Популярные <em>рецепты</em></h2>
+      <span class="title-line"></span>
+    </div>
+    <div class="recipes-grid" id="home-recipes">
+      <div class="card" data-recipe="salad">
+        <div class="card-img-wrap">
+          <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=800&auto=format&fit=crop" alt="Салат">
+          <div class="card-badge">Лёгкое</div>
+          <button class="card-fav" onclick="event.stopPropagation();toggleFav(this)">🤍</button>
+        </div>
+        <div class="card-content">
+          <h3>Свежий салат</h3>
+          <p>Лёгкий и полезный овощной салат с зеленью и оливковым маслом.</p>
+          <div class="card-meta"><span>⏱ 10 мин</span><span>👤 2 порции</span><span>🔥 120 ккал</span></div>
+          <button class="btn-recipe" onclick="openRecipe('salad')">Читать рецепт <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+        </div>
+      </div>
+      <div class="card" data-recipe="pizza">
+        <div class="card-img-wrap">
+          <img src="https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=800&auto=format&fit=crop" alt="Пицца">
+          <div class="card-badge">Средне</div>
+          <button class="card-fav" onclick="event.stopPropagation();toggleFav(this)">🤍</button>
+        </div>
+        <div class="card-content">
+          <h3>Домашняя пицца</h3>
+          <p>Хрустящая пицца с сыром, томатами и ароматными специями.</p>
+          <div class="card-meta"><span>⏱ 40 мин</span><span>👤 4 порции</span><span>🔥 280 ккал</span></div>
+          <button class="btn-recipe" onclick="openRecipe('pizza')">Читать рецепт <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+        </div>
+      </div>
+      <div class="card" data-recipe="steak">
+        <div class="card-img-wrap">
+          <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=800&auto=format&fit=crop" alt="Стейк">
+          <div class="card-badge">Сложно</div>
+          <button class="card-fav" onclick="event.stopPropagation();toggleFav(this)">🤍</button>
+        </div>
+        <div class="card-content">
+          <h3>Сочный стейк</h3>
+          <p>Аппетитный стейк средней прожарки с гарниром из свежих овощей.</p>
+          <div class="card-meta"><span>⏱ 25 мин</span><span>👤 2 порции</span><span>🔥 450 ккал</span></div>
+          <button class="btn-recipe" onclick="openRecipe('steak')">Читать рецепт <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="about-box" id="about">
+      <div class="about-text">
+        <div class="section-label">✦ Наша история ✦</div>
+        <h2 class="section-title">О нашем <em>сайте</em></h2>
+        <p>Здесь вы найдёте простые и вкусные рецепты на каждый день. Мы делимся лучшими идеями для завтраков, обедов, ужинов и десертов. Готовьте с удовольствием и вдохновляйтесь новыми блюдами!</p>
+      </div>
+      <div class="about-stats">
+        <div class="stat-card"><div class="stat-num">150+</div><div class="stat-label">Рецептов</div></div>
+        <div class="stat-card"><div class="stat-num">50k</div><div class="stat-label">Читателей</div></div>
+        <div class="stat-card"><div class="stat-num">5★</div><div class="stat-label">Рейтинг</div></div>
+        <div class="stat-card"><div class="stat-num">3 мин</div><div class="stat-label">Среднее время</div></div>
+      </div>
+    </div>
+  </div>
+
+  <footer id="contact">
+    <p>📧 <strong>recipes@example.com</strong></p>
+    <p>© 2026 <strong>Вкусные Рецепты</strong> — готовим с душой</p>
+  </footer>
+</div>
+
+<!-- ══ LIBRARY PAGE ══ -->
+<div class="page" id="page-library">
+  <div class="library-hero">
+    <div class="library-hero-content">
+      <div class="section-label" style="color:var(--ember)">✦ Полная коллекция ✦</div>
+      <h1>Библиотека <em>рецептов</em></h1>
+      <p>Находите вдохновение каждый день — от лёгких салатов до изысканных блюд</p>
+      <div class="search-wrap">
+        <input class="search-input" id="search-input" type="text" placeholder="Поиск рецептов… (паста, курица, суп…)" oninput="renderLibrary()">
+        <span class="search-icon">🔍</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="filters-bar">
+    <span class="filter-label">Категория:</span>
+    <button class="filter-btn active" data-cat="all" onclick="setFilter(this,'cat')">Все</button>
+    <button class="filter-btn" data-cat="салаты" onclick="setFilter(this,'cat')">🥗 Салаты</button>
+    <button class="filter-btn" data-cat="супы" onclick="setFilter(this,'cat')">🍜 Супы</button>
+    <button class="filter-btn" data-cat="выпечка" onclick="setFilter(this,'cat')">🍕 Выпечка</button>
+    <button class="filter-btn" data-cat="мясо" onclick="setFilter(this,'cat')">🥩 Мясо</button>
+    <button class="filter-btn" data-cat="паста" onclick="setFilter(this,'cat')">🍝 Паста</button>
+    <button class="filter-btn" data-cat="десерты" onclick="setFilter(this,'cat')">🍰 Десерты</button>
+    <button class="filter-btn" data-cat="завтраки" onclick="setFilter(this,'cat')">🥞 Завтраки</button>
+    <select class="sort-select" id="sort-select" onchange="renderLibrary()">
+      <option value="default">По умолчанию</option>
+      <option value="time-asc">Быстрые сначала</option>
+      <option value="cal-asc">Меньше калорий</option>
+      <option value="cal-desc">Больше калорий</option>
+    </select>
+  </div>
+
+  <div class="results-count" id="results-count"></div>
+  <div class="library-grid" id="library-grid"></div>
+
+  <footer>
+    <p>📧 <strong>recipes@example.com</strong></p>
+    <p>© 2026 <strong>Вкусные Рецепты</strong></p>
+  </footer>
+</div>
+
+<!-- MODAL -->
+<div id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <span class="modal-emoji" id="m-emoji"></span>
+    <h2 id="m-title"></h2>
+    <p class="modal-sub" id="m-sub"></p>
+    <div class="modal-meta-row" id="m-meta"></div>
+    <div class="modal-section"><h4>Ингредиенты</h4><ul class="ingredients-list" id="m-ingredients"></ul></div>
+    <div class="modal-section"><h4>Приготовление</h4><ol class="steps-list" id="m-steps"></ol></div>
+  </div>
+</div>
+
+<button id="scroll-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<script>
+// ══ DATA ══
+const RECIPES = [
+  { id:'salad', emoji:'🥗', title:'Свежий салат', cat:'салаты', diff:'Лёгкое', time:10, cal:120, portions:2,
+    img:'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=800&auto=format&fit=crop',
+    desc:'Лёгкий и полезный овощной салат с зеленью и оливковым маслом.',
+    sub:'Лёгкий летний рецепт · 10 минут',
+    ingredients:['Помидоры черри — 200 г','Огурец — 1 шт (большой)','Листья салата — 1 пучок','Красный лук — ½ шт','Оливковое масло — 2 ст. л.','Лимонный сок — 1 ст. л.','Соль и перец — по вкусу'],
+    steps:['Вымойте все овощи под холодной водой.','Нарежьте помидоры черри пополам, огурец — полукольцами.','Красный лук нарежьте тонкими полукольцами и слегка помните руками.','Порвите листья салата крупными кусками.','Смешайте все ингредиенты в глубокой миске.','Заправьте оливковым маслом и лимонным соком, посолите и поперчите.','Подавайте сразу — приятного аппетита!']
+  },
+  { id:'pizza', emoji:'🍕', title:'Домашняя пицца', cat:'выпечка', diff:'Средне', time:40, cal:280, portions:4,
+    img:'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=800&auto=format&fit=crop',
+    desc:'Хрустящая пицца с сыром, томатами и ароматными специями.',
+    sub:'Классика итальянской кухни · 40 минут',
+    ingredients:['Мука — 300 г','Дрожжи сухие — 1 ч. л.','Вода тёплая — 200 мл','Томатный соус — 4 ст. л.','Сыр моцарелла — 200 г','Колбаса / пепперони — 100 г','Помидоры — 2 шт','Орегано — по вкусу','Оливковое масло — 2 ст. л.'],
+    steps:['Смешайте муку, дрожжи, щепотку соли. Добавьте тёплую воду и масло.','Замесите мягкое тесто и дайте ему подняться 20 минут под полотенцем.','Разогрейте духовку до 220°C.','Раскатайте тесто в круг диаметром ~30 см на пергаменте.','Равномерно нанесите томатный соус, оставляя бортики.','Выложите ломтики моцареллы, колбасу и помидоры.','Посыпьте орегано и сбрызните маслом.','Выпекайте 18–22 минуты до золотистой корочки. Готово!']
+  },
+  { id:'steak', emoji:'🥩', title:'Сочный стейк', cat:'мясо', diff:'Сложно', time:25, cal:450, portions:2,
+    img:'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=800&auto=format&fit=crop',
+    desc:'Аппетитный стейк средней прожарки с гарниром из свежих овощей.',
+    sub:'Ресторанный вкус дома · 25 минут',
+    ingredients:['Говяжий стейк (рибай) — 2 шт по 200 г','Соль крупная — 1 ч. л.','Чёрный перец молотый — ½ ч. л.','Сливочное масло — 30 г','Чеснок — 3 зубчика','Тимьян свежий — 3 веточки','Растительное масло — 2 ст. л.'],
+    steps:['Достаньте стейки из холодильника за 30 минут, чтобы мясо прогрелось.','Обсушите бумажным полотенцем. Щедро посолите и поперчите с обеих сторон.','Разогрейте сковороду-гриль до максимума, добавьте растительное масло.','Жарьте стейки по 3–4 минуты с каждой стороны (medium-прожарка).','Убавьте огонь, добавьте сливочное масло, чеснок и тимьян.','Поливайте стейки топлёным маслом ещё 2 минуты.','Дайте отдохнуть под фольгой 5 минут перед подачей.']
+  },
+  { id:'borsch', emoji:'🍲', title:'Борщ классический', cat:'супы', diff:'Средне', time:90, cal:180, portions:6,
+    img:'https://images.unsplash.com/photo-1547592180-85f173990554?q=80&w=800&auto=format&fit=crop',
+    desc:'Наваристый борщ на говяжьем бульоне со сметаной.',
+    sub:'Домашний рецепт · 90 минут',
+    ingredients:['Говядина — 500 г','Свёкла — 2 шт','Капуста — 300 г','Картофель — 3 шт','Морковь — 1 шт','Лук — 1 шт','Томатная паста — 2 ст. л.','Сметана — для подачи','Соль, перец, лавровый лист'],
+    steps:['Сварите бульон из говядины (1.5 часа).','Свёклу натрите на тёрке, обжарьте с томатной пастой 10 минут.','Нарежьте картофель кубиками, добавьте в бульон.','Обжарьте морковь и лук, добавьте в суп.','Нашинкуйте капусту, добавьте в борщ.','Положите свёклу, посолите, поперчите, добавьте лавровый лист.','Варите ещё 10 минут. Подавайте со сметаной и хлебом.']
+  },
+  { id:'pasta', emoji:'🍝', title:'Паста карбонара', cat:'паста', diff:'Средне', time:20, cal:520, portions:2,
+    img:'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?q=80&w=800&auto=format&fit=crop',
+    desc:'Кремовая паста с беконом и яичным соусом — итальянская классика.',
+    sub:'Итальянский рецепт · 20 минут',
+    ingredients:['Спагетти — 200 г','Бекон/гуанчале — 150 г','Яйца — 2 шт + 2 желтка','Пармезан — 80 г','Чёрный перец — щедро','Соль — для воды'],
+    steps:['Отварите спагетти аль денте в подсоленной воде.','Обжарьте бекон на сухой сковороде до хруста.','Смешайте яйца, желтки и тёртый пармезан, добавьте перец.','Слейте пасту, оставив стакан воды.','Смешайте горячие спагетти с беконом (огонь выключить!).','Добавьте яичную смесь, энергично перемешивая и добавляя воду по ложке.','Подавайте сразу с пармезаном и чёрным перцем.']
+  },
+  { id:'cheesecake', emoji:'🍰', title:'Чизкейк Нью-Йорк', cat:'десерты', diff:'Средне', time:60, cal:380, portions:8,
+    img:'https://images.unsplash.com/photo-1565958011703-44f9829ba187?q=80&w=800&auto=format&fit=crop',
+    desc:'Нежный сливочный чизкейк на песочной основе.',
+    sub:'Американская классика · 60 минут + охлаждение',
+    ingredients:['Крекеры/печенье — 200 г','Сливочное масло — 80 г','Сливочный сыр — 600 г','Сахар — 150 г','Яйца — 3 шт','Сметана — 100 г','Ваниль — 1 ч. л.'],
+    steps:['Измельчите печенье, смешайте с растопленным маслом, выложите в форму.','Смешайте сыр с сахаром до однородности.','По одному добавьте яйца, перемешивая.','Добавьте сметану и ваниль.','Вылейте начинку на основу.','Выпекайте при 160°C 55–60 минут (центр должен чуть дрожать).','Остудите, уберите в холодильник на 4+ часа.']
+  },
+  { id:'pancakes', emoji:'🥞', title:'Пышные панкейки', cat:'завтраки', diff:'Лёгкое', time:15, cal:210, portions:4,
+    img:'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?q=80&w=800&auto=format&fit=crop',
+    desc:'Воздушные американские панкейки с кленовым сиропом.',
+    sub:'Идеальный завтрак · 15 минут',
+    ingredients:['Мука — 200 г','Молоко — 200 мл','Яйца — 2 шт','Сахар — 2 ст. л.','Разрыхлитель — 1 ч. л.','Соль — щепотка','Масло для жарки'],
+    steps:['Смешайте сухие ингредиенты: муку, сахар, разрыхлитель, соль.','Взбейте яйца с молоком.','Соедините жидкое с сухим, не мешайте слишком долго (комочки — норма!).','Разогрейте сковороду, смажьте маслом.','Выливайте тесто столовой ложкой, жарьте до пузырьков.','Переверните, жарьте ещё 1 минуту.','Подавайте с кленовым сиропом, ягодами или мёдом.']
+  },
+  { id:'soup-tom', emoji:'🍜', title:'Том Ям', cat:'супы', diff:'Сложно', time:35, cal:160, portions:3,
+    img:'https://images.unsplash.com/photo-1605478371310-a9f1e96b4ff4?q=80&w=800&auto=format&fit=crop',
+    desc:'Острый тайский суп с креветками и кокосовым молоком.',
+    sub:'Тайская кухня · 35 минут',
+    ingredients:['Креветки — 300 г','Кокосовое молоко — 400 мл','Бульон куриный — 400 мл','Лемонграсс — 2 стебля','Галангал — 3 ломтика','Листья лайма — 4 шт','Паста том ям — 2 ст. л.','Рыбный соус — 2 ст. л.','Сок лайма — 2 ст. л.','Грибы шиитаке — 150 г','Перец чили'],
+    steps:['Доведите бульон до кипения с лемонграссом, галангалом и листьями лайма.','Добавьте кокосовое молоко и пасту том ям.','Положите нарезанные грибы, варите 5 минут.','Добавьте креветки, варите 3–4 минуты.','Приправьте рыбным соусом, соком лайма и чили.','Удалите лемонграсс и галангал.','Подавайте со свежей кинзой и дольками лайма.']
+  },
+  { id:'tiramisu', emoji:'☕', title:'Тирамису', cat:'десерты', diff:'Средне', time:30, cal:340, portions:6,
+    img:'https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?q=80&w=800&auto=format&fit=crop',
+    desc:'Нежный итальянский десерт с маскарпоне и кофе.',
+    sub:'Итальянский десерт · 30 мин + охлаждение',
+    ingredients:['Печенье савоярди — 200 г','Маскарпоне — 500 г','Яйца — 4 шт','Сахар — 100 г','Крепкий кофе эспрессо — 300 мл','Какао-порошок — для посыпки','Амаретто — по желанию'],
+    steps:['Отделите белки от желтков.','Взбейте желтки с сахаром до светлой пышной массы.','Добавьте маскарпоне, перемешайте.','Взбейте белки до пиков, аккуратно вмешайте в крем.','Обмакните савоярди в кофе (с амаретто) и выложите слоем.','Нанесите крем, повторите слои.','Посыпьте какао, уберите в холодильник на 4+ часа.']
+  },
+  { id:'shakshuka', emoji:'🍳', title:'Шакшука', cat:'завтраки', diff:'Лёгкое', time:20, cal:220, portions:2,
+    img:'https://images.unsplash.com/photo-1590412200988-a436970781fa?q=80&w=800&auto=format&fit=crop',
+    desc:'Яйца, томлёные в пряном томатном соусе — ближневосточный завтрак.',
+    sub:'Ближневосточная кухня · 20 минут',
+    ingredients:['Яйца — 4 шт','Томаты консервированные — 400 г','Перец болгарский — 1 шт','Лук — 1 шт','Чеснок — 3 зубчика','Тмин — 1 ч. л.','Паприка — 1 ч. л.','Оливковое масло','Свежая зелень'],
+    steps:['Обжарьте лук и перец на оливковом масле 5 минут.','Добавьте чеснок, тмин и паприку, жарьте 1 минуту.','Добавьте томаты, посолите, тушите 10 минут.','Сделайте углубления в соусе, разбейте яйца.','Накройте крышкой, готовьте 5–7 минут (желток полужидкий).','Подавайте с питой или хрустящим хлебом.']
+  },
+  { id:'caesar', emoji:'🥙', title:'Салат Цезарь', cat:'салаты', diff:'Лёгкое', time:15, cal:290, portions:2,
+    img:'https://images.unsplash.com/photo-1550304943-4f24f54ddde9?q=80&w=800&auto=format&fit=crop',
+    desc:'Классический Цезарь с хрустящими крутонами и пармезаном.',
+    sub:'Американский классик · 15 минут',
+    ingredients:['Листья романо — 1 кочан','Куриное филе — 200 г','Пармезан — 50 г','Хлеб для крутонов — 2 ломтика','Майонез — 3 ст. л.','Лимонный сок — 1 ст. л.','Чеснок — 1 зубчик','Анчоусы — 2 шт (по желанию)','Горчица — ½ ч. л.'],
+    steps:['Поджарьте нарезанный хлеб с чесноком до хруста.','Обжарьте куриное филе, нарежьте полосками.','Приготовьте соус: майонез + лимон + горчица + анчоусы.','Порвите листья романо, выложите в миску.','Добавьте курицу и крутоны.','Полейте соусом, посыпьте пармезаном.','Перемешайте прямо перед подачей.']
+  },
+  { id:'lasagna', emoji:'🍝', title:'Лазанья болоньезе', cat:'паста', diff:'Сложно', time:90, cal:480, portions:6,
+    img:'https://images.unsplash.com/photo-1619895092538-128341789043?q=80&w=800&auto=format&fit=crop',
+    desc:'Многослойная лазанья с мясным соусом и бешамелью.',
+    sub:'Итальянская классика · 90 минут',
+    ingredients:['Листы лазаньи — 12 шт','Фарш говяжий — 500 г','Томаты консерв. — 400 г','Лук — 1 шт','Морковь — 1 шт','Молоко — 500 мл','Мука — 50 г','Масло сливочное — 50 г','Мускатный орех','Пармезан — 100 г'],
+    steps:['Обжарьте лук, морковь и фарш.','Добавьте томаты, тушите соус болоньезе 40 минут.','Приготовьте бешамель: обжарьте муку с маслом, добавьте молоко, мускат.','Чередуйте слои: бешамель → листы → болоньезе → бешамель.','Сверху посыпьте пармезаном.','Выпекайте при 180°C 35–40 минут.','Дайте постоять 10 минут перед нарезкой.']
+  },
+];
+
+// ── State ──
+let activeFilters = { cat: 'all' };
+
+// ── Pages ──
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.querySelectorAll('nav a').forEach(a => a.classList.remove('active-nav'));
+  document.getElementById('nav-' + id)?.classList.add('active-nav');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (id === 'library') renderLibrary();
+}
+
+// ── Filters ──
+function setFilter(btn, type) {
+  document.querySelectorAll(`[data-${type}]`).forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeFilters[type] = btn.dataset[type];
+  renderLibrary();
+}
+
+// ── Render Library ──
+function renderLibrary() {
+  const query = document.getElementById('search-input').value.trim().toLowerCase();
+  const cat = activeFilters.cat;
+  const sort = document.getElementById('sort-select').value;
+
+  let list = RECIPES.filter(r => {
+    const matchCat = cat === 'all' || r.cat === cat;
+    const matchQ = !query || r.title.toLowerCase().includes(query) || r.desc.toLowerCase().includes(query) || r.cat.toLowerCase().includes(query);
+    return matchCat && matchQ;
+  });
+
+  if (sort === 'time-asc') list.sort((a,b) => a.time - b.time);
+  else if (sort === 'cal-asc') list.sort((a,b) => a.cal - b.cal);
+  else if (sort === 'cal-desc') list.sort((a,b) => b.cal - a.cal);
+
+  const grid = document.getElementById('library-grid');
+  const count = document.getElementById('results-count');
+  count.textContent = `Найдено рецептов: ${list.length}`;
+
+  if (list.length === 0) {
+    grid.innerHTML = `<div class="no-results"><span class="nr-emoji">🔍</span><h3>Ничего не найдено</h3><p>Попробуйте изменить запрос или сбросить фильтры</p></div>`;
+    return;
+  }
+
+  grid.innerHTML = list.map((r, i) => `
+    <div class="lib-card" style="animation-delay:${i * 0.06}s" onclick="openRecipe('${r.id}')">
+      <div class="lib-card-img">
+        <img src="${r.img}" alt="${r.title}" loading="lazy">
+        <div class="lib-card-cat">${r.cat}</div>
+        <div class="lib-card-diff">${r.diff}</div>
+      </div>
+      <div class="lib-card-body">
+        <h3>${r.emoji} ${r.title}</h3>
+        <p>${r.desc}</p>
+        <div class="lib-card-meta"><span>⏱ ${r.time} мин</span><span>👤 ${r.portions} пор.</span><span>🔥 ${r.cal} ккал</span></div>
+        <button class="lib-open-btn">Открыть рецепт</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── Modal ──
+function openRecipe(id) {
+  const r = RECIPES.find(x => x.id === id);
+  if (!r) return;
+  document.getElementById('m-emoji').textContent = r.emoji;
+  document.getElementById('m-title').textContent = r.title;
+  document.getElementById('m-sub').textContent = r.sub;
+  document.getElementById('m-meta').innerHTML = [
+    ['⏱', r.time + ' мин'], ['👤', r.portions + ' порции'], ['🔥', r.cal + ' ккал'], ['📊', r.diff]
+  ].map(([i,v]) => `<div class="modal-meta-item">${i} ${v}</div>`).join('');
+  document.getElementById('m-ingredients').innerHTML = r.ingredients.map(x =>
+    `<li><span class="dot"></span>${x}</li>`).join('');
+  document.getElementById('m-steps').innerHTML = r.steps.map((s,i) =>
+    `<li><span class="step-num">${i+1}</span><span>${s}</span></li>`).join('');
+  document.getElementById('modal-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// ── Fav ──
+function toggleFav(btn) {
+  btn.textContent = btn.textContent === '🤍' ? '❤️' : '🤍';
+  btn.style.transform = 'scale(1.5)';
+  setTimeout(() => btn.style.transform = '', 300);
+}
+
+// ── Particles ──
+const pc = document.getElementById('particles');
+for (let i = 0; i < 18; i++) {
+  const p = document.createElement('div');
+  p.className = 'particle';
+  p.style.cssText = `left:${Math.random()*100}%;--dur:${5+Math.random()*8}s;--del:${Math.random()*10}s;width:${4+Math.random()*6}px;height:${4+Math.random()*6}px;`;
+  pc.appendChild(p);
+}
+
+// ── Scroll observers ──
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.section-header,.card,.about-box').forEach(el => obs.observe(el));
+document.querySelectorAll('.card').forEach((c, i) => { c.style.transitionDelay = `${i * 0.12}s`; });
+
+// ── Scroll top ──
+const stBtn = document.getElementById('scroll-top');
+window.addEventListener('scroll', () => { stBtn.classList.toggle('visible', window.scrollY > 400); });
+
+// ── Loader ──
+window.addEventListener('load', () => {
+  setTimeout(() => document.getElementById('loader').classList.add('hidden'), 1200);
+});
+</script>
+</body>
+</html>
